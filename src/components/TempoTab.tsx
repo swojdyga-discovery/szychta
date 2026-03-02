@@ -161,6 +161,8 @@ export function TempoTab({ config, gorolMode }: { config: JiraConfig; gorolMode?
             <div className="loading-spinner-lg" style={{ width: 16, height: 16, borderWidth: 2 }} />
             <span>{getLoadingText(gorolMode)}</span>
           </>
+        ) : prevMonthError ? (
+          <span>⚠️ Nie udało się pobrać danych z poprzedniego miesiąca</span>
         ) : prevMonth && prevMonth.missingSeconds > 0 ? (
           <span>⚠️ {prevMonth.monthName} {prevMonth.year} — brakuje {formatHours(prevMonth.missingSeconds)} ({formatHours(prevMonth.loggedSeconds)}&nbsp;/&nbsp;{formatHours(prevMonth.requiredSeconds)})</span>
         ) : prevMonth ? (
