@@ -123,7 +123,7 @@ function ConfigModal({
               <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">
                 GitHub → Settings → Tokens
               </a>
-              , utwórz Personal Access Token (classic) i wklej go poniżej.
+              , utwórz Personal Access Token (classic) z zaznaczonym scope <strong>repo</strong> i wklej go poniżej.
             </p>
             <div className="config-gh-row">
               <input
