@@ -1200,6 +1200,71 @@ label.config-repo-item {
   margin: 0;
 }
 
+/* ── Config: Hints & instructions ── */
+.config-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.config-hint a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.config-hint a:hover {
+  text-decoration: underline;
+}
+
+/* ── Config: CORS Proxy box ── */
+.config-proxy-hint {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.config-proxy-hint strong {
+  font-size: 0.875rem;
+  color: #f59e0b;
+}
+
+.config-proxy-hint p {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin: 0.375rem 0 0.625rem;
+  line-height: 1.5;
+}
+
+.config-proxy-cmd {
+  display: block;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 0.875rem;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  word-break: break-all;
+  line-height: 1.5;
+  user-select: all;
+}
+
+/* ── Config: Footer note ── */
+.config-footer-note {
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
 /* ── Tempo Tab ── */
 .tempo-container {
   padding: 1.5rem 2rem;

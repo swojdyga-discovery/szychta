@@ -99,6 +99,13 @@ function ConfigModal({
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="cfg-jira-token">Jira Token</label>
+            <p className="config-hint">
+              Wejdź na swój{' '}
+              <a href="https://jira.pl.grupa.iti/secure/ViewProfile.jspa" target="_blank" rel="noopener noreferrer">
+                profil w Jira
+              </a>
+              , utwórz osobisty token dostępu i wklej go poniżej.
+            </p>
             <input
               id="cfg-jira-token"
               type="password"
@@ -111,6 +118,13 @@ function ConfigModal({
 
           <div className="form-group">
             <label htmlFor="cfg-gh-token">GitHub Token</label>
+            <p className="config-hint">
+              Wejdź na{' '}
+              <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">
+                GitHub → Settings → Tokens
+              </a>
+              , utwórz Personal Access Token (classic) i wklej go poniżej.
+            </p>
             <div className="config-gh-row">
               <input
                 id="cfg-gh-token"
@@ -193,6 +207,16 @@ function ConfigModal({
             )}
           </div>
 
+          <div className="config-proxy-hint">
+            <strong>⚡ CORS Proxy</strong>
+            <p>
+              Jira nie jest dostępna bezpośrednio z przeglądarki. Uruchom lokalny proxy poleceniem:
+            </p>
+            <code className="config-proxy-cmd">
+              NODE_TLS_REJECT_UNAUTHORIZED=0 npx local-cors-proxy --proxyUrl https://jira.pl.grupa.iti
+            </code>
+          </div>
+
           {saveError && (
             <div className="config-error">
               <p>{saveError}</p>
@@ -213,6 +237,10 @@ function ConfigModal({
               {isSaving ? 'Zapisywanie...' : 'Zapisz'}
             </button>
           </div>
+
+          <p className="config-footer-note">
+            🔒 Wszystkie tokeny są zapisywane wyłącznie w przeglądarce użytkownika (przynajmniej AI tak obiecał)
+          </p>
         </form>
       </div>
     </div>
