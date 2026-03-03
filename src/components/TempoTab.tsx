@@ -46,11 +46,12 @@ export function TempoTab({ config, gorolMode }: { config: JiraConfig; gorolMode?
   const [recentLoading, setRecentLoading] = useState(true);
   const [recentError, setRecentError] = useState<string | null>(null);
 
-  // Filter out completed tasks — user doesn't want to see them at all
-  const recentTasks = useMemo(
-    () => recentTasksRaw.filter((t) => t.statusCategoryKey !== 'done'),
-    [recentTasksRaw]
-  );
+  // Show all statuses, but only tasks updated within the last 30 days
+  const recentTasks = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return recentTasksRaw.filter((t) => new Date(t.updated) >= cutoff);
+  }, [recentTasksRaw]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
