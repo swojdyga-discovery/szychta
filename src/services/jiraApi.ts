@@ -29,7 +29,7 @@ export async function fetchMyIssues(
     jql,
     startAt: String(startAt),
     maxResults: String(maxResults),
-    fields: 'summary,status,priority,issuetype,assignee,project,created,updated,description',
+    fields: 'summary,status,priority,issuetype,assignee,project,created,updated,description,subtasks',
   });
 
   const url = `${buildApiUrl('/rest/api/2/search')}?${params.toString()}`;
@@ -65,12 +65,55 @@ export async function fetchAllMyIssues(
     startAt += pageSize;
   } while (startAt < total);
 
+  // ── Merge in "testing" tasks that were previously assigned to the user ──
+  const myProjectKeys = new Set<string>();
+  for (const issue of allIssues) {
+    if (issue.fields.project?.key) {
+      myProjectKeys.add(issue.fields.project.key);
+    }
+  }
+
+  if (myProjectKeys.size > 0) {
+    const existingKeys = new Set(allIssues.map((i) => i.key));
+    try {
+      const testingIssues = await fetchWasMyTestingIssues(config, Array.from(myProjectKeys));
+      for (const issue of testingIssues) {
+        if (!existingKeys.has(issue.key)) {
+          allIssues.push(issue);
+          existingKeys.add(issue.key);
+        }
+      }
+    } catch {
+      // WAS query may not be supported — silently skip
+    }
+  }
+
   return {
     startAt: 0,
-    maxResults: total,
-    total,
+    maxResults: allIssues.length,
+    total: allIssues.length,
     issues: allIssues,
   };
+}
+
+/**
+ * Fetches tasks that were previously assigned to the current user (but now
+ * have a different assignee) and are NOT done / not in a "to-do" category.
+ * In practice this surfaces tasks that moved to testing / code-review / etc.
+ * after the user finished their part.
+ *
+ * Limited to the given project keys so only the user's team projects are included.
+ */
+async function fetchWasMyTestingIssues(
+  config: JiraConfig,
+  projectKeys: string[]
+): Promise<JiraSearchResponse['issues']> {
+  const projectFilter = `project in (${projectKeys.join(', ')})`;
+  // Fetch tasks where I was assignee, I'm no longer assignee, and the task
+  // is not done and not in the initial "new/to-do" category.
+  const jql = `assignee WAS currentUser() AND assignee != currentUser() AND statusCategory not in (Done, "To Do") AND ${projectFilter} ORDER BY updated DESC`;
+
+  return fetchAllIssuesByJql(config, jql);
 }
 
 export async function fetchCodeReviewIssues(
@@ -690,7 +733,7 @@ async function fetchAllIssuesByJql(
       jql,
       startAt: String(startAt),
       maxResults: String(pageSize),
-      fields: 'summary,status,priority,issuetype,assignee,project,created,updated',
+      fields: 'summary,status,priority,issuetype,assignee,project,created,updated,subtasks',
     });
 
     const url = `${buildApiUrl('/rest/api/2/search')}?${params.toString()}`;

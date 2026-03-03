@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState, useCallback } from 'react';
-import type { JiraIssue, JiraConfig, GitHubConfig, IssueReviewSummary, PrReviewInfo } from '../types/jira';
+import type { JiraIssue, JiraSubtask, JiraConfig, GitHubConfig, IssueReviewSummary, PrReviewInfo } from '../types/jira';
 import { fetchIssueReviewSummary } from '../services/githubApi';
 import { JIRA_BASE_URL } from '../services/jiraApi';
 import { getLoadingText } from '../utils/text';
@@ -105,6 +105,36 @@ function CrStatusBadge({ summary, gorolMode }: { summary: IssueReviewSummary | u
   );
 }
 
+function SubtaskRow({ subtask, browseUrl }: { subtask: JiraSubtask; browseUrl: string }) {
+  const isDone = subtask.fields.status.statusCategory.key === 'done';
+
+  return (
+    <a
+      href={`${browseUrl}/browse/${subtask.key}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`subtask-row ${isDone ? 'subtask-done' : ''}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {subtask.fields.issuetype?.iconUrl && (
+        <img
+          src={subtask.fields.issuetype.iconUrl}
+          alt={subtask.fields.issuetype.name}
+          className="subtask-type-icon"
+          title={subtask.fields.issuetype?.name}
+        />
+      )}
+      <span className="subtask-key">{subtask.key}</span>
+      <span className={`subtask-summary ${isDone ? 'subtask-summary-done' : ''}`}>
+        {subtask.fields.summary}
+      </span>
+      <span className={`subtask-status ${getStatusClass(subtask.fields.status.name)}`}>
+        {subtask.fields.status.name}
+      </span>
+    </a>
+  );
+}
+
 function IssueCard({
   issue,
   browseUrl,
@@ -117,51 +147,68 @@ function IssueCard({
   gorolMode?: boolean;
 }) {
   const showCr = isCodeReview(issue);
+  const subtasks = issue.fields.subtasks;
+  const hasSubtasks = subtasks && subtasks.length > 0;
 
   return (
-    <a
-      href={`${browseUrl}/browse/${issue.key}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="issue-card"
-    >
-      <div className="issue-card-header">
-        <div className="issue-key-row">
-          {issue.fields.issuetype?.iconUrl && (
-            <img
-              src={issue.fields.issuetype.iconUrl}
-              alt={issue.fields.issuetype.name}
-              className="issue-type-icon"
-              title={issue.fields.issuetype?.name}
-            />
-          )}
-          <span className="issue-key">{issue.key}</span>
-          {issue.fields.priority?.iconUrl && (
-            <img
-              src={issue.fields.priority.iconUrl}
-              alt={issue.fields.priority.name}
-              className="priority-icon"
-              title={issue.fields.priority?.name}
-            />
-          )}
-        </div>
-        <span className={`status-badge ${getStatusClass(issue.fields.status.name)}`}>
-          {issue.fields.status.name}
-        </span>
-      </div>
-      <h3 className="issue-summary">{issue.fields.summary}</h3>
-      {showCr && <CrStatusBadge summary={crSummary} gorolMode={gorolMode} />}
-      <div className="issue-meta">
-        {issue.fields.project && (
-          <span className="meta-item project-name">
-            {issue.fields.project.name}
+    <div className={`issue-card-wrapper ${hasSubtasks ? 'issue-card-with-subtasks' : ''}`}>
+      <a
+        href={`${browseUrl}/browse/${issue.key}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="issue-card"
+      >
+        <div className="issue-card-header">
+          <div className="issue-key-row">
+            {issue.fields.issuetype?.iconUrl && (
+              <img
+                src={issue.fields.issuetype.iconUrl}
+                alt={issue.fields.issuetype.name}
+                className="issue-type-icon"
+                title={issue.fields.issuetype?.name}
+              />
+            )}
+            <span className="issue-key">{issue.key}</span>
+            {issue.fields.priority?.iconUrl && (
+              <img
+                src={issue.fields.priority.iconUrl}
+                alt={issue.fields.priority.name}
+                className="priority-icon"
+                title={issue.fields.priority?.name}
+              />
+            )}
+          </div>
+          <span className={`status-badge ${getStatusClass(issue.fields.status.name)}`}>
+            {issue.fields.status.name}
           </span>
-        )}
-        <span className="meta-item">
-          Zaktualizowano: {formatDate(issue.fields.updated)}
-        </span>
-      </div>
-    </a>
+        </div>
+        <h3 className="issue-summary">{issue.fields.summary}</h3>
+        {showCr && <CrStatusBadge summary={crSummary} gorolMode={gorolMode} />}
+        <div className="issue-meta">
+          {issue.fields.project && (
+            <span className="meta-item project-name">
+              {issue.fields.project.name}
+            </span>
+          )}
+          <span className="meta-item">
+            Zaktualizowano: {formatDate(issue.fields.updated)}
+          </span>
+        </div>
+      </a>
+      {hasSubtasks && (
+        <div className="subtask-list">
+          <div className="subtask-list-header">
+            Podzadania
+            <span className="subtask-count">
+              {subtasks.filter((s) => s.fields.status.statusCategory.key === 'done').length}/{subtasks.length}
+            </span>
+          </div>
+          {subtasks.map((subtask) => (
+            <SubtaskRow key={subtask.id} subtask={subtask} browseUrl={browseUrl} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

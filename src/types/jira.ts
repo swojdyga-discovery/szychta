@@ -1,3 +1,30 @@
+export interface JiraSubtask {
+  id: string;
+  key: string;
+  fields: {
+    summary: string;
+    status: {
+      name: string;
+      statusCategory: {
+        key: string;
+        name: string;
+      };
+    };
+    issuetype?: {
+      name: string;
+      iconUrl: string;
+    };
+    priority?: {
+      name: string;
+      iconUrl: string;
+    };
+    assignee?: {
+      displayName: string;
+      avatarUrls?: Record<string, string>;
+    };
+  };
+}
+
 export interface JiraIssue {
   id: string;
   key: string;
@@ -29,6 +56,7 @@ export interface JiraIssue {
     description?: string | null;
     created: string;
     updated: string;
+    subtasks?: JiraSubtask[];
   };
 }
 
@@ -38,6 +66,7 @@ export interface JiraSearchResponse {
   total: number;
   issues: JiraIssue[];
 }
+
 
 export interface JiraComment {
   id: string;

@@ -239,6 +239,102 @@
   opacity: 1;
 }
 
+/* ── Subtask wrapper ── */
+.issue-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.issue-card-with-subtasks .issue-card {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+.subtask-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 1px dashed var(--color-border);
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  padding: 0.5rem 0;
+  box-shadow: var(--shadow);
+}
+
+.subtask-list-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.subtask-count {
+  font-size: 0.65rem;
+  background: var(--color-text-secondary);
+  color: white;
+  padding: 0.1rem 0.4rem;
+  border-radius: 99px;
+  font-weight: 700;
+}
+
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+
+.subtask-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.subtask-done {
+  opacity: 0.55;
+}
+
+.subtask-type-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.subtask-key {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  min-width: 4.5rem;
+}
+
+.subtask-summary {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtask-summary-done {
+  text-decoration: line-through;
+}
+
+.subtask-status {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .issue-card-header {
   display: flex;
   align-items: center;
