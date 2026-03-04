@@ -132,6 +132,7 @@ export async function checkPrReviewStatus(
           Authorization: `Bearer ${ghConfig.token}`,
           Accept: 'application/vnd.github.v3+json',
         },
+        cache: 'no-store',
       }
     );
 
@@ -167,6 +168,7 @@ export async function checkPrReviewStatus(
           Authorization: `Bearer ${ghConfig.token}`,
           Accept: 'application/vnd.github.v3+json',
         },
+        cache: 'no-store',
       }
     );
 
