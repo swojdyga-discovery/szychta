@@ -111,7 +111,7 @@ async function fetchWasMyTestingIssues(
   const projectFilter = `project in (${projectKeys.join(', ')})`;
   // Fetch tasks where I was assignee, I'm no longer assignee, and the task
   // is not done and not in the initial "new/to-do" category.
-  const jql = `assignee WAS currentUser() AND assignee != currentUser() AND statusCategory not in (Done, "To Do") AND ${projectFilter} ORDER BY updated DESC`;
+  const jql = `assignee WAS currentUser() AND (assignee != currentUser() OR assignee is EMPTY) AND statusCategory not in (Done, "To Do") AND ${projectFilter} ORDER BY updated DESC`;
 
   return fetchAllIssuesByJql(config, jql);
 }
