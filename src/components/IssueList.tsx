@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import type { JiraIssue, JiraSubtask, JiraConfig, GitHubConfig, IssueReviewSummary, PrReviewInfo } from '../types/jira';
 import { fetchIssueReviewSummary } from '../services/githubApi';
 import { JIRA_BASE_URL } from '../services/jiraApi';
@@ -58,7 +58,13 @@ function PrBadge({ pr }: { pr: PrReviewInfo }) {
   const repoShort = pr.repo.split('/').pop() || pr.repo;
 
   return (
-    <div className="cr-pr-row">
+    <a
+      href={pr.prUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="cr-pr-row cr-pr-link"
+      onClick={(e) => e.stopPropagation()}
+    >
       <span className="cr-pr-name" title={`${pr.repo} #${pr.prNumber}`}>
         {repoShort} #{pr.prNumber}
       </span>
@@ -70,7 +76,7 @@ function PrBadge({ pr }: { pr: PrReviewInfo }) {
       <span className={`cr-inline-badge ${approvalsOk ? 'cr-inline-approvals-ok' : 'cr-inline-approvals-low'}`}>
         Approvals: {pr.approvals}
       </span>
-    </div>
+    </a>
   );
 }
 
@@ -212,9 +218,34 @@ function IssueCard({
   );
 }
 
+function getPrLinksToReview(
+  crSummaries: Record<string, IssueReviewSummary>,
+  codeReviewIssues: JiraIssue[],
+): string[] {
+  if (codeReviewIssues.length === 0) return [];
+
+  for (const issue of codeReviewIssues) {
+    const s = crSummaries[issue.key];
+    if (!s || s.loading) return [];
+  }
+
+  const links: string[] = [];
+  for (const issue of codeReviewIssues) {
+    const summary = crSummaries[issue.key];
+    for (const pr of summary.prs) {
+      if (!pr.error && pr.approvals < 2) {
+        links.push(pr.prUrl);
+      }
+    }
+  }
+  return links;
+}
+
 export function IssueList({ issues, config, ghConfig, allowedRepos, gorolMode }: IssueListProps) {
   const browseUrl = JIRA_BASE_URL;
   const [crSummaries, setCrSummaries] = useState<Record<string, IssueReviewSummary>>({});
+  const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const { active, finished } = useMemo(() => {
     const active: JiraIssue[] = [];
@@ -243,9 +274,12 @@ export function IssueList({ issues, config, ghConfig, allowedRepos, gorolMode }:
   );
 
   const loadCrSummaries = useCallback(async () => {
-    if (!ghConfig || codeReviewIssues.length === 0) return;
+    if (!ghConfig || codeReviewIssues.length === 0) {
+      setCrSummaries({});
+      return;
+    }
 
-    // Mark all as loading
+    // Mark all as loading, reset old entries
     const loadingEntries: Record<string, IssueReviewSummary> = {};
     for (const issue of codeReviewIssues) {
       loadingEntries[issue.key] = {
@@ -253,7 +287,7 @@ export function IssueList({ issues, config, ghConfig, allowedRepos, gorolMode }:
         loading: true,
       };
     }
-    setCrSummaries((prev) => ({ ...prev, ...loadingEntries }));
+    setCrSummaries(loadingEntries);
 
     // Fetch all in parallel (pass description to avoid extra API call)
     const results = await Promise.all(
@@ -274,6 +308,19 @@ export function IssueList({ issues, config, ghConfig, allowedRepos, gorolMode }:
     loadCrSummaries();
   }, [loadCrSummaries]);
 
+  const prLinksToReview = getPrLinksToReview(crSummaries, codeReviewIssues);
+
+  const handleCopyPrLinks = async () => {
+    if (prLinksToReview.length === 0) return;
+    try {
+      const text = 'Prośba o CR:\n' + prLinksToReview.map((link) => `- ${link}`).join('\n');
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard API may fail in insecure context */ }
+  };
+
   return (
     <div className="issue-list-content">
       {issues.length === 0 ? (
@@ -290,7 +337,20 @@ export function IssueList({ issues, config, ghConfig, allowedRepos, gorolMode }:
           <div className="board-column">
             <div className="column-header">
               <h2>Taski</h2>
-              <span className="column-count">{active.length}</span>
+              <div className="column-header-actions">
+                <button
+                  className="btn-copy-pr-links"
+                  onClick={handleCopyPrLinks}
+                  title={prLinksToReview.join('\n')}
+                  disabled={prLinksToReview.length === 0}
+                  style={prLinksToReview.length === 0 ? { visibility: 'hidden' } : undefined}
+                >
+                  {copied
+                    ? '✓ Skopiowano!'
+                    : `Kopiuj linki do PR (${prLinksToReview.length})`}
+                </button>
+                <span className="column-count">{active.length}</span>
+              </div>
             </div>
             <div className="column-cards">
               {active.length === 0 ? (
