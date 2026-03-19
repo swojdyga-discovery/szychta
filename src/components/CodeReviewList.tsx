@@ -42,12 +42,14 @@ function ReviewBadge({ pr, gorolMode }: { pr: PullRequestReview; gorolMode?: boo
 }
 
 function PrCard({ pr, gorolMode }: { pr: PullRequestReview; gorolMode?: boolean }) {
+  const isClosed = pr.state === 'closed';
+
   return (
     <a
       href={pr.prUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="pr-card"
+      className={`pr-card ${isClosed ? 'pr-card-closed' : ''}`}
     >
       <div className="pr-card-header">
         <span className="pr-repo">{pr.repo}</span>
@@ -85,11 +87,13 @@ function PrCard({ pr, gorolMode }: { pr: PullRequestReview; gorolMode?: boolean 
 }
 
 function CodeReviewIssueCard({ issue, browseUrl, gorolMode }: { issue: CodeReviewIssue; browseUrl: string; gorolMode?: boolean }) {
-  const needsReview = issue.pullRequests.some(
+  const activePrs = issue.pullRequests.filter((pr) => pr.state !== 'closed');
+
+  const needsReview = activePrs.some(
     (pr) => !pr.loading && !pr.error && !pr.userApproved && pr.userReviewState !== 'CHANGES_REQUESTED'
   );
 
-  const allApproved = issue.pullRequests.length > 0 && issue.pullRequests.every(
+  const allApproved = activePrs.length > 0 && activePrs.every(
     (pr) => pr.userApproved
   );
 
@@ -301,18 +305,21 @@ export function CodeReviewList({ jiraConfig, ghConfig, myIssueKeys, allowedRepos
     loadCodeReviewIssues();
   }, [loadCodeReviewIssues]);
 
-  // My board: split into needs review vs approved
-  const myNeedsReview = myBoardIssues.filter((issue) =>
-    issue.pullRequests.some((pr) => !pr.userApproved)
-  );
-  const myApproved = myBoardIssues.filter((issue) =>
-    issue.pullRequests.length > 0 && issue.pullRequests.every((pr) => pr.userApproved)
-  );
+  // My board: split into needs review vs approved (ignore closed PRs)
+  const myNeedsReview = myBoardIssues.filter((issue) => {
+    const active = issue.pullRequests.filter((pr) => pr.state !== 'closed');
+    return active.some((pr) => !pr.userApproved);
+  });
+  const myApproved = myBoardIssues.filter((issue) => {
+    const active = issue.pullRequests.filter((pr) => pr.state !== 'closed');
+    return active.length > 0 && active.every((pr) => pr.userApproved);
+  });
 
-  // Other teams: split into needs review vs approved
-  const otherNeedsReview = otherTeamIssues.filter((issue) =>
-    issue.pullRequests.some((pr) => !pr.userApproved)
-  );
+  // Other teams: split into needs review vs approved (ignore closed PRs)
+  const otherNeedsReview = otherTeamIssues.filter((issue) => {
+    const active = issue.pullRequests.filter((pr) => pr.state !== 'closed');
+    return active.some((pr) => !pr.userApproved);
+  });
   const totalAll = myBoardIssues.length + otherTeamIssues.length;
 
   if (allowedRepos.length === 0) {

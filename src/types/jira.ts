@@ -116,6 +116,7 @@ export interface PrReviewInfo {
   repo: string;
   title: string;
   prAuthor: string;
+  state: string;
   approvals: number;
   changesRequested: number;
   error?: string;

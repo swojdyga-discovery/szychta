@@ -299,6 +299,7 @@ export async function fetchIssueReviewSummary(
       repo: pr.repo,
       title: pr.title,
       prAuthor: pr.prAuthor,
+      state: pr.state,
       approvals: pr.totalApprovals,
       changesRequested: pr.totalChangesRequested,
       error: pr.error,

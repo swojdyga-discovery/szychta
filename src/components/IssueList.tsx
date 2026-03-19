@@ -54,6 +54,7 @@ function PrBadge({ pr }: { pr: PrReviewInfo }) {
     );
   }
 
+  const isClosed = pr.state === 'closed';
   const approvalsOk = pr.approvals >= 2;
   const repoShort = pr.repo.split('/').pop() || pr.repo;
 
@@ -62,20 +63,25 @@ function PrBadge({ pr }: { pr: PrReviewInfo }) {
       href={pr.prUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="cr-pr-row cr-pr-link"
+      className={`cr-pr-row cr-pr-link ${isClosed ? 'cr-pr-closed' : ''}`}
       onClick={(e) => e.stopPropagation()}
     >
       <span className="cr-pr-name" title={`${pr.repo} #${pr.prNumber}`}>
         {repoShort} #{pr.prNumber}
       </span>
-      {pr.changesRequested > 0 && (
+      {isClosed && (
+        <span className="cr-inline-badge cr-inline-closed">Closed</span>
+      )}
+      {pr.changesRequested > 0 && !isClosed && (
         <span className="cr-inline-badge cr-inline-changes">
           Changes: {pr.changesRequested}
         </span>
       )}
-      <span className={`cr-inline-badge ${approvalsOk ? 'cr-inline-approvals-ok' : 'cr-inline-approvals-low'}`}>
-        Approvals: {pr.approvals}
-      </span>
+      {!isClosed && (
+        <span className={`cr-inline-badge ${approvalsOk ? 'cr-inline-approvals-ok' : 'cr-inline-approvals-low'}`}>
+          Approvals: {pr.approvals}
+        </span>
+      )}
     </a>
   );
 }
@@ -233,7 +239,7 @@ function getPrLinksToReview(
   for (const issue of codeReviewIssues) {
     const summary = crSummaries[issue.key];
     for (const pr of summary.prs) {
-      if (!pr.error && pr.approvals < 2) {
+      if (!pr.error && pr.approvals < 2 && pr.state !== 'closed') {
         links.push(pr.prUrl);
       }
     }
