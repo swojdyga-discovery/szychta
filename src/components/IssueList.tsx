@@ -254,14 +254,25 @@ export function IssueList({ issues, config, ghConfig, allowedRepos, gorolMode }:
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const { active, finished } = useMemo(() => {
+    // Collect keys of all subtasks that are already shown under a parent issue
+    const subtaskKeysOfParents = new Set<string>();
+    for (const issue of issues) {
+      if (issue.fields.subtasks) {
+        for (const sub of issue.fields.subtasks) {
+          subtaskKeysOfParents.add(sub.key);
+        }
+      }
+    }
+
     const active: JiraIssue[] = [];
     const finished: JiraIssue[] = [];
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     for (const issue of issues) {
+      if (subtaskKeysOfParents.has(issue.key)) continue;
+
       if (isFinished(issue)) {
-        // Only show finished tasks updated in the last 30 days
         const updatedDate = new Date(issue.fields.updated);
         if (updatedDate >= thirtyDaysAgo) {
           finished.push(issue);
