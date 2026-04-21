@@ -397,9 +397,10 @@ export async function fetchCurrentJiraUser(config: JiraConfig): Promise<string> 
 }
 
 /**
- * Counts business days (Mon-Fri) in a date range [start, end] inclusive.
+ * Counts business days (Mon-Fri) in a date range [start, end] inclusive,
+ * excluding dates present in the holidays set (formatted as "YYYY-MM-DD").
  */
-function countBusinessDays(start: Date, end: Date): number {
+function countBusinessDays(start: Date, end: Date, holidays: Set<string> = new Set()): number {
   let count = 0;
   const d = new Date(start);
   d.setHours(0, 0, 0, 0);
@@ -408,11 +409,84 @@ function countBusinessDays(start: Date, end: Date): number {
 
   while (d <= endDate) {
     const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) count++;
+    if (dow !== 0 && dow !== 6) {
+      const key = formatDate(d);
+      if (!holidays.has(key)) count++;
+    }
     d.setDate(d.getDate() + 1);
   }
 
   return count;
+}
+
+/**
+ * Computes Easter Sunday for a given year using the Anonymous Gregorian algorithm.
+ */
+function easterSunday(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month, day);
+}
+
+/**
+ * Returns all Polish public holidays for a given year as "YYYY-MM-DD" strings.
+ */
+function getPolishHolidays(year: number): Set<string> {
+  const easter = easterSunday(year);
+  const easterMonday = new Date(easter);
+  easterMonday.setDate(easter.getDate() + 1);
+  const corpusChristi = new Date(easter);
+  corpusChristi.setDate(easter.getDate() + 60);
+
+  const fixed = [
+    `${year}-01-01`, // Nowy Rok
+    `${year}-01-06`, // Trzech Króli
+    `${year}-05-01`, // Święto Pracy
+    `${year}-05-03`, // Konstytucja 3 Maja
+    `${year}-08-15`, // Wniebowzięcie NMP
+    `${year}-11-01`, // Wszystkich Świętych
+    `${year}-11-11`, // Święto Niepodległości
+    `${year}-12-25`, // Boże Narodzenie
+    `${year}-12-26`, // Drugi dzień BN
+  ];
+
+  const movable = [
+    formatDate(easterMonday),  // Poniedziałek Wielkanocny
+    formatDate(corpusChristi), // Boże Ciało
+  ];
+
+  return new Set([...fixed, ...movable]);
+}
+
+/**
+ * Returns Polish public holidays that fall within [dateFrom, dateTo].
+ */
+function getHolidaysInRange(dateFrom: string, dateTo: string): Set<string> {
+  const startYear = new Date(dateFrom).getFullYear();
+  const endYear = new Date(dateTo).getFullYear();
+  const from = new Date(dateFrom).getTime();
+  const to = new Date(dateTo + 'T23:59:59').getTime();
+
+  const result = new Set<string>();
+  for (let y = startYear; y <= endYear; y++) {
+    for (const h of getPolishHolidays(y)) {
+      const t = new Date(h).getTime();
+      if (t >= from && t <= to) result.add(h);
+    }
+  }
+  return result;
 }
 
 /**
@@ -435,14 +509,17 @@ export async function fetchTempoMonthSummary(
   const dateFrom = formatDate(firstDay);
   const dateTo = formatDate(lastDay);
 
-  // Business days
-  const businessDays = countBusinessDays(firstDay, lastDay);
+  // Polish public holidays in this month
+  const holidays = getHolidaysInRange(dateFrom, dateTo);
+
+  // Business days (excluding weekends + Polish holidays)
+  const businessDays = countBusinessDays(firstDay, lastDay, holidays);
 
   // Business days elapsed (up to today, or last day if month has ended)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const effectiveEnd = today < lastDay ? today : lastDay;
-  const businessDaysElapsed = countBusinessDays(firstDay, effectiveEnd);
+  const businessDaysElapsed = countBusinessDays(firstDay, effectiveEnd, holidays);
 
   // 8 hours per business day
   const requiredSeconds = businessDays * 8 * 3600;
@@ -507,8 +584,10 @@ export async function fetchPreviousMonthStatus(
   const dateFrom = formatDate(firstDay);
   const dateTo = formatDate(lastDay);
 
-  // Business days & required hours
-  const businessDays = countBusinessDays(firstDay, lastDay);
+  // Polish public holidays in the previous month
+  const holidays = getHolidaysInRange(dateFrom, dateTo);
+
+  const businessDays = countBusinessDays(firstDay, lastDay, holidays);
   const requiredSeconds = businessDays * 8 * 3600;
 
   // Fetch worklogs for previous month
